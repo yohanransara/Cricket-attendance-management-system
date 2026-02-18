@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
+import Image from 'next/image';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
@@ -70,8 +71,8 @@ export default function RegisterPage() {
             await authAPI.register(data);
             toast.success('Registration successful! Please log in.');
             router.push('/login');
-        } catch (error: any) {
-            const message = error.response?.data?.message || 'Registration failed. Please try again.';
+        } catch (error: unknown) {
+            const message = (error as { response?: { data?: { message?: string } } }).response?.data?.message || 'Registration failed. Please try again.';
             toast.error(message);
         } finally {
             setIsLoading(false);
@@ -82,7 +83,7 @@ export default function RegisterPage() {
         <div className="min-h-screen w-full flex items-center justify-center bg-background relative overflow-hidden px-4 py-8 md:py-12">
             {/* Background pattern */}
             <div className="absolute inset-0 z-0 opacity-5 pointer-events-none">
-                <img src="/cricket-pattern.svg" alt="pattern" className="w-full h-full object-cover" />
+                <Image src="/cricket-pattern.svg" alt="pattern" fill className="object-cover" />
             </div>
 
             <div className="w-full max-w-2xl relative z-10">
@@ -128,7 +129,7 @@ export default function RegisterPage() {
                                     </Label>
                                     <Input
                                         id="studentId"
-                                        placeholder="e.g. TEC/2020/001"
+                                        placeholder="TEC/2021/001"
                                         {...register('studentId')}
                                         disabled={isLoading}
                                         className={errors.studentId ? 'border-destructive' : ''}
@@ -144,7 +145,7 @@ export default function RegisterPage() {
                                     <Input
                                         id="email"
                                         type="email"
-                                        placeholder="your-id@tec.rjt.ac.lk"
+                                        placeholder="Your-Unimail"
                                         {...register('email')}
                                         disabled={isLoading}
                                         className={errors.email ? 'border-destructive' : ''}
@@ -152,7 +153,7 @@ export default function RegisterPage() {
                                     <div className="flex items-center gap-1.5 px-1">
                                         <div className="w-1.5 h-1.5 rounded-full bg-primary animate-pulse" />
                                         <p className="text-[10px] text-muted-foreground uppercase tracking-widest font-bold">
-                                            Strictly @tec.rjt.ac.lk only
+                                            Rusl unimail only
                                         </p>
                                     </div>
                                     {errors.email && <p className="text-xs text-destructive">{errors.email.message}</p>}
@@ -181,7 +182,7 @@ export default function RegisterPage() {
                                     </Label>
                                     <Input
                                         id="faculty"
-                                        placeholder="e.g. Technology"
+                                        placeholder="E.g. Technology"
                                         {...register('faculty')}
                                         disabled={isLoading}
                                         className={errors.faculty ? 'border-destructive' : ''}

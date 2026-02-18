@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
+import Image from 'next/image';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
@@ -71,15 +72,17 @@ export default function LoginPage() {
     };
 
     return (
-        <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-primary/10 via-background to-accent/10 p-4">
+        <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-primary/10 via-background to-accent/10 p-4 relative">
             {/* Background Pattern */}
-            <div className="absolute inset-0 bg-[url('/cricket-pattern.svg')] opacity-5"></div>
+            <div className="absolute inset-0 z-0 opacity-5 pointer-events-none">
+                <Image src="/cricket-pattern.svg" alt="pattern" fill className="object-cover" />
+            </div>
 
             <div className="w-full max-w-md relative z-10">
                 {/* University Logo & Branding */}
                 <div className="text-center mb-6 md:mb-8">
-                    <div className="w-20 h-20 md:w-24 md:h-24 mx-auto mb-4 bg-white/10 p-2 rounded-full flex items-center justify-center border-2 border-primary/20">
-                        <img src="/logo.png" alt="RUSL Logo" className="w-full h-full object-contain" />
+                    <div className="w-20 h-20 md:w-24 md:h-24 mx-auto mb-4 bg-white/10 p-2 rounded-full flex items-center justify-center border-2 border-primary/20 relative">
+                        <Image src="/logo.png" alt="RUSL Logo" width={96} height={96} className="object-contain" />
                     </div>
                     <h1 className="text-3xl font-bold text-primary mb-2">
                         Rajarata University of Sri Lanka
@@ -92,7 +95,7 @@ export default function LoginPage() {
                 {/* Login Card with Glassmorphism */}
                 <Card className="backdrop-blur-lg bg-card/80 shadow-2xl border-2">
                     <CardHeader className="space-y-1">
-                        <CardTitle className="text-2xl font-bold text-center">Admin Login</CardTitle>
+                        <CardTitle className="text-2xl font-bold text-center">Login</CardTitle>
                         <CardDescription className="text-center">
                             Enter your credentials to access the system
                         </CardDescription>

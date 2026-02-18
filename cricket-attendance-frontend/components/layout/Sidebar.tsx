@@ -7,8 +7,8 @@ import {
     ClipboardCheck,
     BarChart3,
     LogOut,
-    Trophy
 } from 'lucide-react';
+import Image from 'next/image';
 import { authAPI } from '@/lib/api';
 import { toast } from 'sonner';
 import type { User } from '@/types';
@@ -90,8 +90,8 @@ export default function Sidebar({ isOpen, onClose }: SidebarProps) {
                 {/* Logo & Branding */}
                 <div className="p-6 border-b border-sidebar-border">
                     <div className="flex items-center gap-3">
-                        <div className="w-12 h-12 bg-white/10 p-1 rounded-lg flex items-center justify-center">
-                            <img src="/logo.png" alt="Logo" className="w-full h-full object-contain" />
+                        <div className="w-12 h-12 bg-white/10 p-1 rounded-lg flex items-center justify-center relative">
+                            <Image src="/logo.png" alt="Logo" width={48} height={48} className="object-contain" />
                         </div>
                         <div>
                             <h2 className="font-bold text-lg leading-tight">Cricket</h2>

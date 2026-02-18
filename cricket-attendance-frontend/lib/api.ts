@@ -106,8 +106,8 @@ export const attendanceAPI = {
         return response.data;
     },
 
-    markAttendance: async (sessionId: number, attendanceData: { studentId: number; isPresent: boolean }[]): Promise<void> => {
-        await api.post('/attendance/mark', { sessionId, attendanceData });
+    markAttendance: async (sessionId: number, attendance: { studentId: number; isPresent: boolean }[]): Promise<void> => {
+        await api.post('/attendance/mark', { sessionId, attendance });
     },
 
     getSessionByDate: async (date: string): Promise<{ session: PracticeSession; attendance: AttendanceRecord[] }> => {

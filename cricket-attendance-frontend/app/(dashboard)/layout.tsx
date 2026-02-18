@@ -6,6 +6,7 @@ import Sidebar from '@/components/layout/Sidebar';
 import { Toaster } from 'sonner';
 import { Menu, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import Image from 'next/image';
 
 export default function DashboardLayout({
     children,
@@ -31,7 +32,7 @@ export default function DashboardLayout({
                 {/* Mobile Header */}
                 <header className="h-16 border-b bg-card flex items-center justify-between px-4 md:hidden">
                     <div className="flex items-center gap-2">
-                        <img src="/logo.png" alt="Logo" className="w-8 h-8 object-contain" />
+                        <Image src="/logo.png" alt="Logo" width={32} height={32} className="object-contain" />
                         <span className="font-bold text-sm">Cricket RUSL</span>
                     </div>
                     <Button
