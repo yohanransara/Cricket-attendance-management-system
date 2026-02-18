@@ -35,7 +35,7 @@ public class AttendanceService {
                             .filter(Attendance::isPresent)
                             .map(a -> a.getStudent().getName())
                             .collect(Collectors.toList());
-                    
+
                     return PracticeAttendanceDTO.builder()
                             .id(session.getId())
                             .date(session.getDate())
@@ -50,7 +50,7 @@ public class AttendanceService {
         if (existing.isPresent()) {
             return existing.get();
         }
-        
+
         PracticeSession session = PracticeSession.builder()
                 .date(date)
                 .createdAt(LocalDateTime.now())
@@ -68,7 +68,7 @@ public class AttendanceService {
                     .orElseThrow(() -> new RuntimeException("Student not found: " + item.getStudentId()));
 
             Optional<Attendance> existing = attendanceRepository.findByPracticeSessionAndStudent(session, student);
-            
+
             Attendance attendance;
             if (existing.isPresent()) {
                 attendance = existing.get();
@@ -94,5 +94,25 @@ public class AttendanceService {
         Student student = studentRepository.findById(studentId)
                 .orElseThrow(() -> new RuntimeException("Student not found"));
         return attendanceRepository.findByStudent(student);
+    }
+
+    public lk.rusl.cricket.dto.SessionAttendanceDTO getSessionByDate(LocalDate date) {
+        PracticeSession session = sessionRepository.findByDate(date).orElse(null);
+        if (session == null) {
+            return null;
+        }
+
+        List<Attendance> attendances = attendanceRepository.findByPracticeSession(session);
+        List<lk.rusl.cricket.dto.SessionAttendanceDTO.StudentAttendanceRecordDTO> records = attendances.stream()
+                .map(a -> lk.rusl.cricket.dto.SessionAttendanceDTO.StudentAttendanceRecordDTO.builder()
+                        .studentId(a.getStudent().getId())
+                        .isPresent(a.isPresent())
+                        .build())
+                .collect(Collectors.toList());
+
+        return lk.rusl.cricket.dto.SessionAttendanceDTO.builder()
+                .session(session)
+                .attendance(records)
+                .build();
     }
 }

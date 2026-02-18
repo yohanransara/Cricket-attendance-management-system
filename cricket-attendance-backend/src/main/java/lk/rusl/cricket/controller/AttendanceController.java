@@ -12,13 +12,14 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import java.time.LocalDate;
 import java.util.List;
+import java.util.Map;
 
 import lk.rusl.cricket.dto.PracticeAttendanceDTO;
+import lk.rusl.cricket.dto.SessionAttendanceDTO;
 
 @RestController
 @RequestMapping("/api/attendance")
@@ -33,8 +34,15 @@ public class AttendanceController {
     }
 
     @PostMapping("/session")
-    public ResponseEntity<PracticeSession> createSession(@RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate date) {
+    public ResponseEntity<PracticeSession> createSession(@RequestBody Map<String, String> payload) {
+        LocalDate date = LocalDate.parse(payload.get("date"));
         return ResponseEntity.ok(attendanceService.createSession(date));
+    }
+
+    @GetMapping("/session/{date}")
+    public ResponseEntity<SessionAttendanceDTO> getSessionByDate(
+            @PathVariable @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate date) {
+        return ResponseEntity.ok(attendanceService.getSessionByDate(date));
     }
 
     @PostMapping("/mark")
@@ -43,7 +51,7 @@ public class AttendanceController {
         return ResponseEntity.ok().build();
     }
 
-    @GetMapping("/session/{sessionId}")
+    @GetMapping("/session/id/{sessionId}")
     public List<Attendance> getAttendanceBySession(@PathVariable Long sessionId) {
         return attendanceService.getAttendanceBySession(sessionId);
     }
