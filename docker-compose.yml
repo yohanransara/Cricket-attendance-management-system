@@ -20,6 +20,9 @@ services:
       SPRING_DATASOURCE_URL: jdbc:postgresql://db:5432/cricket_attendance
       SPRING_DATASOURCE_USERNAME: postgres
       SPRING_DATASOURCE_PASSWORD: postgres
+      SPRING_DATASOURCE_DRIVER_CLASS_NAME: org.postgresql.Driver
+      SPRING_JPA_DATABASE_PLATFORM: org.hibernate.dialect.PostgreSQLDialect
+      SPRING_JPA_HIBERNATE_DDL_AUTO: update
       JWT_SECRET: 404E635266556A586E3272357538782F413F4428472B4B6250645367566B5970
     depends_on:
       - db
