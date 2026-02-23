@@ -85,6 +85,10 @@ export default function AttendancePage() {
 
             // Step 1: Create or Get Session
             const session = await attendanceAPI.createSession(formattedDate);
+            if (!session || !session.id) {
+                console.error('Missing session ID:', session);
+                throw new Error('Server returned an invalid session. Please check backend logs.');
+            }
 
             // Step 2: Mark Attendance
             const attendanceData = Object.entries(attendance).map(([id, isPresent]) => ({

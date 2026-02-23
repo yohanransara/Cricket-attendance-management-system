@@ -60,27 +60,37 @@ public class AttendanceService {
 
     @Transactional
     public void markAttendance(AttendanceDTO attendanceDTO) {
-        PracticeSession session = sessionRepository.findById(attendanceDTO.getSessionId())
-                .orElseThrow(() -> new RuntimeException("Session not found"));
+        System.out.println("Marking attendance for session: " + attendanceDTO.getSessionId());
+        try {
+            PracticeSession session = sessionRepository.findById(attendanceDTO.getSessionId())
+                    .orElseThrow(() -> new RuntimeException("Session not found with ID: " + attendanceDTO.getSessionId()));
 
-        for (AttendanceDTO.StudentAttendance item : attendanceDTO.getAttendance()) {
-            Student student = studentRepository.findById(item.getStudentId())
-                    .orElseThrow(() -> new RuntimeException("Student not found: " + item.getStudentId()));
+            for (AttendanceDTO.StudentAttendance item : attendanceDTO.getAttendance()) {
+                System.out.println("Processing student ID: " + item.getStudentId() + ", present: " + item.isPresent());
+                
+                Student student = studentRepository.findById(item.getStudentId())
+                        .orElseThrow(() -> new RuntimeException("Student not found with ID: " + item.getStudentId()));
 
-            Optional<Attendance> existing = attendanceRepository.findByPracticeSessionAndStudent(session, student);
+                Optional<Attendance> existing = attendanceRepository.findByPracticeSessionAndStudent(session, student);
 
-            Attendance attendance;
-            if (existing.isPresent()) {
-                attendance = existing.get();
-                attendance.setPresent(item.isPresent());
-            } else {
-                attendance = Attendance.builder()
-                        .practiceSession(session)
-                        .student(student)
-                        .isPresent(item.isPresent())
-                        .build();
+                Attendance attendance;
+                if (existing.isPresent()) {
+                    attendance = existing.get();
+                    attendance.setPresent(item.isPresent());
+                } else {
+                    attendance = Attendance.builder()
+                            .practiceSession(session)
+                            .student(student)
+                            .isPresent(item.isPresent())
+                            .build();
+                }
+                attendanceRepository.save(attendance);
             }
-            attendanceRepository.save(attendance);
+            System.out.println("Attendance marked successfully for all students.");
+        } catch (Exception e) {
+            System.err.println("CRITICAL ERROR marking attendance: " + e.getMessage());
+            e.printStackTrace();
+            throw e; // Rethrow to trigger transaction rollback
         }
     }
 

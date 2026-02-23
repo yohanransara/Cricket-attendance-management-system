@@ -19,6 +19,11 @@ import { Button } from '@/components/ui/button';
 import { reportAPI } from '@/lib/api';
 import { FileDown, TrendingUp, Users, Calendar, Award, Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
+import { format } from 'date-fns';
+import jsPDF from 'jspdf';
+import autoTable from 'jspdf-autotable';
+import ExcelJS from 'exceljs';
+import { saveAs } from 'file-saver';
 import type { MonthlyAttendanceData, DashboardStats } from '@/types';
 
 export default function ReportsPage() {
@@ -46,6 +51,75 @@ export default function ReportsPage() {
         }
     };
 
+    const handleExportPDF = () => {
+        try {
+            const doc = new jsPDF();
+
+            // Add Title
+            doc.setFontSize(20);
+            doc.setTextColor(10, 31, 68); // Brand color
+            doc.text('RUSL Cricket Attendance Report', 14, 22);
+
+            doc.setFontSize(11);
+            doc.setTextColor(100);
+            doc.text(`Generated on: ${format(new Date(), 'PPP p')}`, 14, 30);
+
+            // Add Table
+            const tableData = monthlyData.map((item: MonthlyAttendanceData) => [
+                item.month,
+                item.present.toString(),
+                item.absent.toString()
+            ]);
+
+            autoTable(doc, {
+                startY: 40,
+                head: [['Month', 'Present Count', 'Absent Count']],
+                body: tableData,
+                headStyles: { fillColor: [10, 31, 68] },
+                alternateRowStyles: { fillColor: [245, 179, 1] },
+            });
+
+            doc.save('cricket_attendance_report.pdf');
+            toast.success('PDF report downloaded');
+        } catch (error) {
+            console.error('PDF export failed:', error);
+            toast.error('Failed to generate PDF');
+        }
+    };
+
+    const handleExportExcel = async () => {
+        try {
+            const workbook = new ExcelJS.Workbook();
+            const worksheet = workbook.addWorksheet('Attendance Summary');
+
+            worksheet.columns = [
+                { header: 'Month', key: 'month', width: 20 },
+                { header: 'Present', key: 'present', width: 15 },
+                { header: 'Absent', key: 'absent', width: 15 }
+            ];
+
+            // Stylize Header
+            worksheet.getRow(1).font = { bold: true, color: { argb: 'FFFFFFFF' } };
+            worksheet.getRow(1).fill = {
+                type: 'pattern',
+                pattern: 'solid',
+                fgColor: { argb: 'FF0A1F44' }
+            };
+
+            monthlyData.forEach((item: MonthlyAttendanceData) => {
+                worksheet.addRow(item);
+            });
+
+            const buffer = await workbook.xlsx.writeBuffer();
+            const blob = new Blob([buffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+            saveAs(blob, 'cricket_attendance_summary.xlsx');
+            toast.success('Excel export downloaded');
+        } catch (error) {
+            console.error('Excel export failed:', error);
+            toast.error('Failed to generate Excel file');
+        }
+    };
+
     const COLORS = ['#0A1F44', '#F5B301', '#E2E8F0'];
 
     const pieData = stats ? [
@@ -70,10 +144,10 @@ export default function ReportsPage() {
                     <p className="text-muted-foreground">Analytics and participation trends</p>
                 </div>
                 <div className="flex gap-4">
-                    <Button variant="outline" className="border-2">
+                    <Button variant="outline" className="border-2" onClick={handleExportPDF}>
                         <FileDown className="w-4 h-4 mr-2" /> PDF Report
                     </Button>
-                    <Button variant="outline" className="border-2">
+                    <Button variant="outline" className="border-2" onClick={handleExportExcel}>
                         <FileDown className="w-4 h-4 mr-2" /> Excel Export
                     </Button>
                 </div>

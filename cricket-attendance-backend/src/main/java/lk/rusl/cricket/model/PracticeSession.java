@@ -1,5 +1,6 @@
 package lk.rusl.cricket.model;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
@@ -37,6 +38,7 @@ public class PracticeSession {
 
     private LocalDateTime createdAt;
 
+    @JsonIgnore
     @OneToMany(mappedBy = "practiceSession")
     private List<Attendance> attendanceRecords;
 }
