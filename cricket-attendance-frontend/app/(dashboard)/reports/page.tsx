@@ -16,20 +16,29 @@ import {
     Cell
 } from 'recharts';
 import { Button } from '@/components/ui/button';
-import { reportAPI } from '@/lib/api';
-import { FileDown, TrendingUp, Users, Calendar, Award, Loader2 } from 'lucide-react';
+import { FileDown, TrendingUp, Users, Calendar as CalendarIcon, Award, Loader2, Search, CheckCircle, XCircle } from 'lucide-react';
 import { toast } from 'sonner';
 import { format } from 'date-fns';
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
 import ExcelJS from 'exceljs';
 import { saveAs } from 'file-saver';
-import type { MonthlyAttendanceData, DashboardStats } from '@/types';
+import { attendanceAPI, reportAPI } from '@/lib/api';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { Calendar } from '@/components/ui/calendar';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import { Badge } from '@/components/ui/badge';
+import type { MonthlyAttendanceData, DashboardStats, SessionAttendance, StudentAttendanceRecord } from '@/types';
 
 export default function ReportsPage() {
     const [loading, setLoading] = useState(true);
     const [stats, setStats] = useState<DashboardStats | null>(null);
     const [monthlyData, setMonthlyData] = useState<MonthlyAttendanceData[]>([]);
+
+    // Daily Report State
+    const [selectedDate, setSelectedDate] = useState<Date | undefined>(undefined);
+    const [dailyReport, setDailyReport] = useState<SessionAttendance | null>(null);
+    const [fetchingDaily, setFetchingDaily] = useState(false);
 
     useEffect(() => {
         fetchData();
@@ -51,35 +60,80 @@ export default function ReportsPage() {
         }
     };
 
+    const handleDateSelect = async (date: Date | undefined) => {
+        setSelectedDate(date);
+        if (!date) {
+            setDailyReport(null);
+            return;
+        }
+
+        setFetchingDaily(true);
+        try {
+            const formattedDate = format(date, 'yyyy-MM-dd');
+            const data = await attendanceAPI.getSessionByDate(formattedDate);
+            if (data) {
+                setDailyReport(data);
+                toast.success(`Loaded attendance for ${formattedDate}`);
+            } else {
+                setDailyReport(null);
+                toast.info(`No practice session found for ${formattedDate}`);
+            }
+        } catch (error) {
+            console.error('Failed to fetch daily report:', error);
+            toast.error('Failed to load daily attendance');
+        } finally {
+            setFetchingDaily(false);
+        }
+    };
+
     const handleExportPDF = () => {
         try {
             const doc = new jsPDF();
+            const isDaily = !!dailyReport && !!selectedDate;
+            const title = isDaily
+                ? `Attendance Report - ${format(selectedDate!, 'PPP')}`
+                : 'RUSL Cricket Monthly Attendance Report';
 
             // Add Title
             doc.setFontSize(20);
             doc.setTextColor(10, 31, 68); // Brand color
-            doc.text('RUSL Cricket Attendance Report', 14, 22);
+            doc.text(title, 14, 22);
 
             doc.setFontSize(11);
             doc.setTextColor(100);
             doc.text(`Generated on: ${format(new Date(), 'PPP p')}`, 14, 30);
 
-            // Add Table
-            const tableData = monthlyData.map((item: MonthlyAttendanceData) => [
-                item.month,
-                item.present.toString(),
-                item.absent.toString()
-            ]);
+            let head, body;
+
+            if (isDaily) {
+                head = [['Reg ID', 'Student Name', 'Status']];
+                body = dailyReport!.attendance.map((record: StudentAttendanceRecord) => [
+                    record.studentRegId,
+                    record.studentName,
+                    record.isPresent ? 'Present' : 'Absent'
+                ]);
+            } else {
+                head = [['Month', 'Present Count', 'Absent Count']];
+                body = monthlyData.map((item: MonthlyAttendanceData) => [
+                    item.month,
+                    item.present.toString(),
+                    item.absent.toString()
+                ]);
+            }
 
             autoTable(doc, {
                 startY: 40,
-                head: [['Month', 'Present Count', 'Absent Count']],
-                body: tableData,
+                head: head,
+                body: body,
                 headStyles: { fillColor: [10, 31, 68] },
-                alternateRowStyles: { fillColor: [245, 179, 1] },
+                alternateRowStyles: { fillColor: [254, 247, 229] },
             });
 
-            doc.save('cricket_attendance_report.pdf');
+            const filename = isDaily
+                ? `cricket_attendance_${format(selectedDate!, 'yyyy_MM_dd')}.pdf`
+                : 'cricket_monthly_summary.pdf';
+
+            doc.save(filename);
             toast.success('PDF report downloaded');
         } catch (error) {
             console.error('PDF export failed:', error);
@@ -90,13 +144,33 @@ export default function ReportsPage() {
     const handleExportExcel = async () => {
         try {
             const workbook = new ExcelJS.Workbook();
-            const worksheet = workbook.addWorksheet('Attendance Summary');
+            const isDaily = !!dailyReport && !!selectedDate;
+            const sheetName = isDaily ? 'Daily Attendance' : 'Monthly Summary';
+            const worksheet = workbook.addWorksheet(sheetName);
 
-            worksheet.columns = [
-                { header: 'Month', key: 'month', width: 20 },
-                { header: 'Present', key: 'present', width: 15 },
-                { header: 'Absent', key: 'absent', width: 15 }
-            ];
+            if (isDaily) {
+                worksheet.columns = [
+                    { header: 'Reg ID', key: 'studentRegId', width: 20 },
+                    { header: 'Student Name', key: 'studentName', width: 30 },
+                    { header: 'Status', key: 'status', width: 15 }
+                ];
+                dailyReport!.attendance.forEach((record: StudentAttendanceRecord) => {
+                    worksheet.addRow({
+                        studentRegId: record.studentRegId,
+                        studentName: record.studentName,
+                        status: record.isPresent ? 'Present' : 'Absent'
+                    });
+                });
+            } else {
+                worksheet.columns = [
+                    { header: 'Month', key: 'month', width: 20 },
+                    { header: 'Present', key: 'present', width: 15 },
+                    { header: 'Absent', key: 'absent', width: 15 }
+                ];
+                monthlyData.forEach((item: MonthlyAttendanceData) => {
+                    worksheet.addRow(item);
+                });
+            }
 
             // Stylize Header
             worksheet.getRow(1).font = { bold: true, color: { argb: 'FFFFFFFF' } };
@@ -106,13 +180,13 @@ export default function ReportsPage() {
                 fgColor: { argb: 'FF0A1F44' }
             };
 
-            monthlyData.forEach((item: MonthlyAttendanceData) => {
-                worksheet.addRow(item);
-            });
+            const filename = isDaily
+                ? `cricket_attendance_${format(selectedDate!, 'yyyy_MM_dd')}.xlsx`
+                : 'cricket_monthly_summary.xlsx';
 
             const buffer = await workbook.xlsx.writeBuffer();
             const blob = new Blob([buffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
-            saveAs(blob, 'cricket_attendance_summary.xlsx');
+            saveAs(blob, filename);
             toast.success('Excel export downloaded');
         } catch (error) {
             console.error('Excel export failed:', error);
@@ -138,18 +212,48 @@ export default function ReportsPage() {
 
     return (
         <div className="space-y-8">
-            <div className="flex justify-between items-center">
+            <div className="flex justify-between items-center bg-white p-6 rounded-xl border-2 shadow-sm">
                 <div>
-                    <h1 className="text-3xl font-bold text-primary">Attendance Reports</h1>
-                    <p className="text-muted-foreground">Analytics and participation trends</p>
+                    <h1 className="text-3xl font-bold text-[#0A1F44]">Attendance Reports</h1>
+                    <p className="text-muted-foreground mt-1">Analytics and participation trends</p>
                 </div>
-                <div className="flex gap-4">
-                    <Button variant="outline" className="border-2" onClick={handleExportPDF}>
-                        <FileDown className="w-4 h-4 mr-2" /> PDF Report
-                    </Button>
-                    <Button variant="outline" className="border-2" onClick={handleExportExcel}>
-                        <FileDown className="w-4 h-4 mr-2" /> Excel Export
-                    </Button>
+                <div className="flex items-center gap-4">
+                    <Popover>
+                        <PopoverTrigger asChild>
+                            <Button variant="outline" className={`w-[240px] justify-start text-left font-normal border-2 ${!selectedDate && "text-muted-foreground"}`}>
+                                <CalendarIcon className="mr-2 h-4 w-4" />
+                                {selectedDate ? format(selectedDate, "PPP") : <span>Filter by practice date</span>}
+                            </Button>
+                        </PopoverTrigger>
+                        <PopoverContent className="w-auto p-0" align="end">
+                            <Calendar
+                                mode="single"
+                                selected={selectedDate}
+                                onSelect={handleDateSelect}
+                                initialFocus
+                            />
+                        </PopoverContent>
+                    </Popover>
+
+                    <div className="h-8 w-px bg-slate-200 mx-2" />
+
+                    <div className="flex gap-2">
+                        <Button
+                            className="bg-[#0A1F44] hover:bg-[#1a2e5a] text-white"
+                            onClick={handleExportPDF}
+                            disabled={!monthlyData.length && !dailyReport}
+                        >
+                            <FileDown className="w-4 h-4 mr-2" /> PDF Report
+                        </Button>
+                        <Button
+                            variant="outline"
+                            className="border-2 text-[#F5B301] border-[#F5B301] hover:bg-[#F5B301]/10"
+                            onClick={handleExportExcel}
+                            disabled={!monthlyData.length && !dailyReport}
+                        >
+                            <FileDown className="w-4 h-4 mr-2" /> Excel Export
+                        </Button>
+                    </div>
                 </div>
             </div>
 
@@ -204,6 +308,64 @@ export default function ReportsPage() {
                     </CardContent>
                 </Card>
             </div>
+
+            {/* Daily Report Table Section */}
+            {selectedDate && (
+                <Card className="border-2 shadow-md overflow-hidden">
+                    <CardHeader className="bg-slate-50 border-b-2">
+                        <div className="flex justify-between items-center">
+                            <div>
+                                <CardTitle className="text-xl flex items-center gap-2">
+                                    Practice Details: {format(selectedDate, 'PPP')}
+                                    {dailyReport && <Badge className="bg-green-100 text-green-700 border-green-200">Session Found</Badge>}
+                                </CardTitle>
+                                <CardDescription>Attendance results for the selected practice day</CardDescription>
+                            </div>
+                            {fetchingDaily && <Loader2 className="w-5 h-5 animate-spin text-primary" />}
+                        </div>
+                    </CardHeader>
+                    <CardContent className="p-0">
+                        {dailyReport ? (
+                            <Table>
+                                <TableHeader>
+                                    <TableRow className="bg-slate-50">
+                                        <TableHead className="font-bold">Registration ID</TableHead>
+                                        <TableHead className="font-bold">Student Name</TableHead>
+                                        <TableHead className="text-center font-bold">Attendance Status</TableHead>
+                                    </TableRow>
+                                </TableHeader>
+                                <TableBody>
+                                    {dailyReport.attendance.map((record: StudentAttendanceRecord) => (
+                                        <TableRow key={record.studentId} className="hover:bg-slate-50/50">
+                                            <TableCell className="font-medium text-slate-700">{record.studentRegId}</TableCell>
+                                            <TableCell className="font-semibold">{record.studentName}</TableCell>
+                                            <TableCell>
+                                                <div className="flex justify-center">
+                                                    {record.isPresent ? (
+                                                        <Badge variant="outline" className="bg-green-50 text-green-700 border-green-200 flex gap-1 items-center px-3 py-1">
+                                                            <CheckCircle className="w-3 h-3" /> Present
+                                                        </Badge>
+                                                    ) : (
+                                                        <Badge variant="outline" className="bg-red-50 text-red-700 border-red-200 flex gap-1 items-center px-3 py-1">
+                                                            <XCircle className="w-3 h-3" /> Absent
+                                                        </Badge>
+                                                    )}
+                                                </div>
+                                            </TableCell>
+                                        </TableRow>
+                                    ))}
+                                </TableBody>
+                            </Table>
+                        ) : (
+                            <div className="flex flex-col items-center justify-center p-12 text-muted-foreground bg-white">
+                                <Search className="w-12 h-12 mb-4 opacity-20" />
+                                <p className="text-lg">No session data found for this date.</p>
+                                <p className="text-sm">Please select another date or check if attendance was marked.</p>
+                            </div>
+                        )}
+                    </CardContent>
+                </Card>
+            )}
 
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
                 {/* Monthly Bar Chart */}

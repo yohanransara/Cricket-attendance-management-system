@@ -116,6 +116,8 @@ public class AttendanceService {
         List<lk.rusl.cricket.dto.SessionAttendanceDTO.StudentAttendanceRecordDTO> records = attendances.stream()
                 .map(a -> lk.rusl.cricket.dto.SessionAttendanceDTO.StudentAttendanceRecordDTO.builder()
                         .studentId(a.getStudent().getId())
+                        .studentName(a.getStudent().getName())
+                        .studentRegId(a.getStudent().getStudentId())
                         .isPresent(a.isPresent())
                         .build())
                 .collect(Collectors.toList());

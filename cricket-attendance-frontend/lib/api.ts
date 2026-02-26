@@ -11,6 +11,7 @@ import type {
     StudentReport,
     StudentStats,
     RegisterRequest,
+    SessionAttendance,
 } from '@/types';
 
 // API base URL - will be configured for backend
@@ -110,8 +111,8 @@ export const attendanceAPI = {
         await api.post('/attendance/mark', { sessionId, attendance });
     },
 
-    getSessionByDate: async (date: string): Promise<{ session: PracticeSession; attendance: AttendanceRecord[] }> => {
-        const response = await api.get(`/attendance/session/${date}`);
+    getSessionByDate: async (date: string): Promise<SessionAttendance> => {
+        const response = await api.get<SessionAttendance>(`/attendance/session/${date}`);
         return response.data;
     },
 

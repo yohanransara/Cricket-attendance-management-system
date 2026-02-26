@@ -17,7 +17,7 @@ import { toast } from 'sonner';
 import { format } from 'date-fns';
 import { ClipboardCheck, CalendarIcon, Save, Loader2 } from 'lucide-react';
 import { studentAPI, attendanceAPI } from '@/lib/api';
-import type { Student } from '@/types';
+import type { Student, StudentAttendanceRecord } from '@/types';
 
 export default function AttendancePage() {
     const [date, setDate] = useState<Date | undefined>(new Date());
@@ -60,7 +60,7 @@ export default function AttendancePage() {
             const data = await attendanceAPI.getSessionByDate(formattedDate);
             if (data && data.session) {
                 const savedAttendance: Record<number, boolean> = {};
-                data.attendance.forEach(record => {
+                data.attendance.forEach((record: StudentAttendanceRecord) => {
                     savedAttendance[record.studentId] = record.isPresent;
                 });
                 setAttendance(savedAttendance);
