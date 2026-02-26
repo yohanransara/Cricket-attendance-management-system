@@ -19,8 +19,23 @@ export interface Student {
 export interface PracticeSession {
   id: number;
   date: string;
-  createdBy: number;
+  createdBy?: {
+    id: number;
+    email: string;
+  };
   createdAt: string;
+}
+
+export interface StudentAttendanceRecord {
+  studentId: number;
+  studentRegId: string;
+  studentName: string;
+  isPresent: boolean;
+}
+
+export interface SessionAttendance {
+  session: PracticeSession;
+  attendance: StudentAttendanceRecord[];
 }
 
 export interface Attendance {

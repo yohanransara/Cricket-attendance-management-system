@@ -10,6 +10,12 @@ services:
       - "5432:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
+    restart: always
+    healthcheck:
+      test: [ "CMD-SHELL", "pg_isready -U postgres -d cricket_attendance" ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
 
   backend:
     build: ./cricket-attendance-backend
@@ -25,7 +31,8 @@ services:
       SPRING_JPA_HIBERNATE_DDL_AUTO: update
       JWT_SECRET: 404E635266556A586E3272357538782F413F4428472B4B6250645367566B5970
     depends_on:
-      - db
+      db:
+        condition: service_healthy
 
   frontend:
     build: ./cricket-attendance-frontend
@@ -33,7 +40,7 @@ services:
     ports:
       - "3000:3000"
     environment:
-      NEXT_PUBLIC_API_URL: http://51.20.120.249:8080/api
+      NEXT_PUBLIC_API_URL: http://localhost:8080/api
     depends_on:
       - backend
 

@@ -22,6 +22,8 @@ public class SessionAttendanceDTO {
     @AllArgsConstructor
     public static class StudentAttendanceRecordDTO {
         private Long studentId;
+        private String studentRegId;
+        private String studentName;
         private boolean isPresent;
     }
 }
